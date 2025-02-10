@@ -33,7 +33,7 @@ jobs:
 
             - name: Push version bump commit and tags
               env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GITHUB_TOKEN: ${{ secrets.PAT }}
               run: |
                   # Set the remote URL to include the authentication token
                   git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/hacktails/kpathdb.git
