@@ -1,1 +1,17 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Check for the BUMP_VERSION environment variable
+if [ -n "$BUMP_VERSION" ]; then
+  # Bump the version based on the value of BUMP_VERSION (e.g., major, minor, patch)
+  pnpm version $BUMP_VERSION
+else
+  echo "BUMP_VERSION not set, skipping version bump."
+fi
+
+# Add the updated package files to the staging area so they are included in the commit.
+git add package.json
+[ -f package-lock.json ] && git add package-lock.json
+
+# Run the build command
 pnpm build
