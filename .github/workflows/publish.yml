@@ -21,6 +21,19 @@ jobs:
             - name: Install pnpm
               run: npm install -g pnpm
 
+            - name: Bump version
+              run: |
+                  # Configure git user for the commit
+                  git config user.name "github-actions"
+                  git config user.email "github-actions@github.com"
+                  # Bump the version (patch increment) and commit with [skip ci] to avoid triggering a new workflow run.
+                  npm version patch -m "chore: bump version to %s [skip ci]"
+              env:
+                  CI: true
+
+            - name: Push version bump commit and tags
+              run: git push origin HEAD --follow-tags
+
             - name: Install Dependencies
               run: pnpm install
 
