@@ -12,15 +12,16 @@ export default defineConfig({
         },
         rollupOptions: {
             // Externalize dependencies that shouldn't be bundled
-            external: ["zod"],
+            external: ["zod", "react", "react-dom"],
             output: {
                 globals: {
                     zod: "zod",
+                    react: "react",
+                    "react-dom": "react-dom",
                 },
             },
             input: {
-                main: "./index.html",
-                test: "./test/index.html",
+                main: "./src/index.ts",
             },
         },
     },
