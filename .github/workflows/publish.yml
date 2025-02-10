@@ -32,7 +32,12 @@ jobs:
                   CI: true
 
             - name: Push version bump commit and tags
-              run: git push origin HEAD --follow-tags
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  # Set the remote URL to include the authentication token
+                  git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/hacktails/kpathdb.git
+                  git push origin HEAD --follow-tags
 
             - name: Install Dependencies
               run: pnpm install
