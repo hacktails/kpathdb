@@ -1,1 +1,14 @@
+# Check for the BUMP_VERSION environment variable
+if [ -n "$BUMP_VERSION" ]; then
+  # Bump the version based on the value of BUMP_VERSION (e.g., major, minor, patch)
+  pnpm version $BUMP_VERSION
+else
+  pnpm version patch --no-git-tag-version
+fi
+
+# Add the updated package files to the staging area so they are included in the commit.
+git add package.json
+[ -f package-lock.json ] && git add package-lock.json
+
+# Run the build command
 pnpm build
