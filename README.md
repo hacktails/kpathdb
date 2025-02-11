@@ -1,8 +1,8 @@
 # KPathDB
 
 [![npm version](https://img.shields.io/npm/v/kpathdb.svg)](https://www.npmjs.com/package/kpathdb)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/hacktails/kpathdb/ci.yml)](https://github.com/hacktails/kpathdb/actions)
-[![License: MIT](https://img.shields.io/npm/l/kpathdb.svg)](LICENSE)
+[![Build Status](https://github.com/hacktails/kpathdb/actions/workflows/publish.yml/badge.svg)](https://github.com/hacktails/kpathdb/actions/workflows/publish.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript)
 ![IndexedDB](https://img.shields.io/badge/IndexedDB-3.0-33475B)
@@ -11,13 +11,13 @@ KPathDB is a lightweight, open-source ORM for IndexedDB built with TypeScript. I
 
 ## Features
 
--   **IndexedDB ORM:** Simplify CRUD operations and schema management for IndexedDB.
--   **Schema Validation:** Utilize Zod for ensuring data integrity.
--   **Vector Search:** Perform vector similarity searches using cosine similarity, ideal for ML and chat agent use cases.
--   **TypeScript Support:** Written in TypeScript for strong typing and improved developer experience.
--   **Modern Build Tools:** Built with [Vite](https://vitejs.dev/) for fast development and optimized library bundling.
--   **Scalable Design:** Easily extendable to support multi-store transactions and plug-in vector search algorithms.
--   **React Hooks:** Provides convenient hooks for seamless integration with React applications.
+- **IndexedDB ORM:** Simplify CRUD operations and schema management for IndexedDB.
+- **Schema Validation:** Utilize Zod for ensuring data integrity.
+- **Vector Search:** Perform vector similarity searches using cosine similarity, ideal for ML and chat agent use cases.
+- **TypeScript Support:** Written in TypeScript for strong typing and improved developer experience.
+- **Modern Build Tools:** Built with [Vite](https://vitejs.dev/) for fast development and optimized library bundling.
+- **Scalable Design:** Easily extendable to support multi-store transactions and plug-in vector search algorithms.
+- **React Hooks:** Provides convenient hooks for seamless integration with React applications.
 
 ## Installation
 
@@ -237,10 +237,10 @@ export default VectorSearchComponent;
 
 ### Explanation
 
--   schema definition: you should have a vector field.
--   targetVector: This is the vector you want to find similar items to. You might generate this dynamically based on user input or other criteria.
--   useVectorQuery Hook: This hook takes the store name and the target vector as arguments. It returns the similar items found and a loading state.
--   Displaying Results: The component renders a loading message while the search is in progress and then displays the similar items found.
+- schema definition: you should have a vector field.
+- targetVector: This is the vector you want to find similar items to. You might generate this dynamically based on user input or other criteria.
+- useVectorQuery Hook: This hook takes the store name and the target vector as arguments. It returns the similar items found and a loading state.
+- Displaying Results: The component renders a loading message while the search is in progress and then displays the similar items found.
 
 ## API Reference
 
@@ -248,48 +248,48 @@ export default VectorSearchComponent;
 
 The main class for interacting with the database.
 
--   **`constructor(config)`:** Initializes a new database instance.
-    -   `config`: Configuration object specifying database name, version, and stores.
--   **`getStore(storeName)`:** Returns a store instance for performing operations.
-    -   `storeName`: The name of the store to retrieve.
+- **`constructor(config)`:** Initializes a new database instance.
+    - `config`: Configuration object specifying database name, version, and stores.
+- **`getStore(storeName)`:** Returns a store instance for performing operations.
+    - `storeName`: The name of the store to retrieve.
 
 ### Store Methods
 
 Methods available on store instances returned by `getStore`. These methods are generic and should be used with the type of your Zod schema.
 
--   **`add(data)`:** Adds a new record to the store.
-    -   `data`: The data to add, conforming to the store's schema.
--   **`get(key)`:** Retrieves a record by its key.
-    -   `key`: The key of the record to retrieve.
--   **`getAll()`:** Retrieves all records from the store.
--   **`update(data)`:** Updates an existing record.
-    -   `data`: The data to update, including the key.
--   **`delete(key)`:** Deletes a record by its key.
-    -   `key`: The key of the record to delete.
--   **`findSimilar(vector, options)`:** Finds records similar to the given vector.
-    -   `vector`: The vector to compare against.
-    -   `options`: Optional parameters like `limit`.
+- **`add(data)`:** Adds a new record to the store.
+    - `data`: The data to add, conforming to the store's schema.
+- **`get(key)`:** Retrieves a record by its key.
+    - `key`: The key of the record to retrieve.
+- **`getAll()`:** Retrieves all records from the store.
+- **`update(data)`:** Updates an existing record.
+    - `data`: The data to update, including the key.
+- **`delete(key)`:** Deletes a record by its key.
+    - `key`: The key of the record to delete.
+- **`findSimilar(vector, options)`:** Finds records similar to the given vector.
+    - `vector`: The vector to compare against.
+    - `options`: Optional parameters like `limit`.
 
 ### React Hooks
 
--   **`useQuery(storeName, queryKey?)`:** Hook for querying data.
-    -   `storeName`: The name of the store to query.
-    -   `queryKey`: Optional key for caching.
--   **`useMutation(storeName)`:** Hook for performing mutations (add, update, delete).
-    -   `storeName`: The name of the store to perform mutations on.
--   **`useVectorQuery(storeName, targetVector, options?)`:** Hook for performing vector similarity searches.
-    -   `storeName`: The name of the store.
-    -   `targetVector`: The vector to search for similarity.
-    -   `options`: Optional parameters, such as `limit`.
+- **`useQuery(storeName, queryKey?)`:** Hook for querying data.
+    - `storeName`: The name of the store to query.
+    - `queryKey`: Optional key for caching.
+- **`useMutation(storeName)`:** Hook for performing mutations (add, update, delete).
+    - `storeName`: The name of the store to perform mutations on.
+- **`useVectorQuery(storeName, targetVector, options?)`:** Hook for performing vector similarity searches.
+    - `storeName`: The name of the store.
+    - `targetVector`: The vector to search for similarity.
+    - `options`: Optional parameters, such as `limit`.
 
 ## Architecture Overview
 
 Features demonstrated in TodoApp:
 
--   Real-time CRUD operations using React Hooks.
--   Automatic query refresh after mutations.
--   Integration with Zod for schema validation.
--   Vector field simulation for storing embeddings.
+- Real-time CRUD operations using React Hooks.
+- Automatic query refresh after mutations.
+- Integration with Zod for schema validation.
+- Vector field simulation for storing embeddings.
 
 ## Performance Characteristics
 
@@ -309,12 +309,12 @@ npm run dev:test
 
 ## Roadmap
 
--   [ ] **Web Workers Integration:** Offload vector calculations to Web Workers for improved performance.
--   [ ] **HNSW Algorithm:** Implement the Hierarchical Navigable Small World (HNSW) algorithm for approximate nearest neighbor search.
--   [ ] **Suspense API Integration:** Utilize React Suspense for smoother data fetching and loading states.
--   [ ] **WASM Acceleration:** Accelerate mathematical operations using WebAssembly.
--   [ ] **Cross-Tab Synchronization:** Implement mechanisms for synchronizing data across multiple browser tabs.
--   [ ] **Automatic Schema Migrations:** Develop utilities for handling schema changes and data migrations seamlessly.
+- [ ] **Web Workers Integration:** Offload vector calculations to Web Workers for improved performance.
+- [ ] **HNSW Algorithm:** Implement the Hierarchical Navigable Small World (HNSW) algorithm for approximate nearest neighbor search.
+- [ ] **Suspense API Integration:** Utilize React Suspense for smoother data fetching and loading states.
+- [ ] **WASM Acceleration:** Accelerate mathematical operations using WebAssembly.
+- [ ] **Cross-Tab Synchronization:** Implement mechanisms for synchronizing data across multiple browser tabs.
+- [ ] **Automatic Schema Migrations:** Develop utilities for handling schema changes and data migrations seamlessly.
 
 ## Contributing
 
