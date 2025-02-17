@@ -43,204 +43,111 @@ pnpm add kpathdb
 
 KPathDB is designed to work seamlessly within browser environments that support IndexedDB. Here's how to get started with KPathDB in your React projects:
 
-### Basic Example with React Hooks
+### 1. Configure Your Database
 
-This example demonstrates how to use KPathDB's React hooks (`useQuery` and `useMutation`) to manage a simple Todo list.
+First, define your database configuration:
+
+```tsx
+// db-config.ts
+import { DBConfig } from "kpathdb";
+import { z } from "zod";
+
+// Optional: Define Zod schemas for your stores
+const todoSchema = z.object({
+    id: z.string(),
+    text: z.string(),
+    completed: z.boolean(),
+});
+
+export const dbConfig: DBConfig = {
+    name: "MyAppDB",
+    version: 1,
+    stores: {
+        todos: {
+            keyPath: "id",
+            zodSchema: todoSchema, // Optional: Add Zod schema
+            indexes: ["completed"], // Optional: Define indexes
+        },
+        users: { keyPath: "id" }, // Simple store definition
+    },
+};
+```
+
+### 2. Set Up the DBProvider
+
+Wrap your application with the `DBProvider` component:
+
+```tsx
+// App.tsx or main.tsx
+import { DBProvider } from "kpathdb";
+import { dbConfig } from "./db-config";
+
+const App = () => {
+    return (
+        <DBProvider config={dbConfig}>
+            {/* Your app components */}
+            <TodoApp />
+        </DBProvider>
+    );
+};
+
+export default App;
+```
+
+### 3. Use KPathDB Hooks in Your Components
+
+Now you can use the KPathDB hooks in any component within the `DBProvider`:
 
 ```tsx
 // TodoApp.tsx
 import React from "react";
 import { useQuery, useMutation } from "kpathdb";
-import { z } from "zod";
 
-// Define the schema for a Todo item
-const TodoSchema = z.object({
-    id: z.string(),
-    text: z.string(),
-    completed: z.boolean(),
-    vector: z.array(z.number()).optional(), // Optional vector for embeddings
-});
-
-// Infer the TypeScript type from the Zod schema
-type Todo = z.infer<typeof TodoSchema>;
+interface Todo {
+    id: string;
+    text: string;
+    completed: boolean;
+}
 
 const TodoApp: React.FC = () => {
-    // Use the useQuery hook to fetch and manage the 'todos' data
     const { data: todos, refresh } = useQuery<Todo>("todos");
-    // Use the useMutation hook for adding and updating todos
     const { mutate } = useMutation<Todo>("todos");
 
-    // Function to simulate generating an embedding for a todo item
-    const generateEmbedding = async (text: string): Promise<number[]> => {
-        // Simulate an API call or computation to generate a vector embedding
-        return Array.from({ length: 10 }, () => Math.random());
-    };
-
-    // Handler for adding a new todo
     const handleAdd = async (text: string) => {
-        const newTodo: Todo = {
+        await mutate("add", {
             id: crypto.randomUUID(),
             text,
             completed: false,
-            vector: await generateEmbedding(text), // Generate and store the embedding
-        };
-        await mutate("add", newTodo);
-        refresh(); // Refresh the todo list after adding
-    };
-
-    // Handler for toggling a todo's completion status
-    const handleToggle = async (id: string) => {
-        const todoToUpdate = todos.find((todo) => todo.id === id);
-        if (todoToUpdate) {
-            await mutate("update", { ...todoToUpdate, completed: !todoToUpdate.completed });
-            refresh(); // Refresh the todo list after updating
-        }
-    };
-
-    // Handler for deleting a todo
-    const handleDelete = async (id: string) => {
-        await mutate("delete", { id });
+        });
         refresh();
     };
 
-    return (
-        <div>
-            <h1>Todo App</h1>
-            <input
-                type="text"
-                onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                        handleAdd(e.currentTarget.value);
-                        e.currentTarget.value = "";
-                    }
-                }}
-                placeholder="Add a new todo..."
-            />
-            {todos.map((todo) => (
-                <div key={todo.id}>
-                    <input type="checkbox" checked={todo.completed} onChange={() => handleToggle(todo.id)} />
-                    <span style={{ textDecoration: todo.completed ? "line-through" : "none" }}>{todo.text}</span>
-                    <button onClick={() => handleDelete(todo.id)}>Delete</button>
-                </div>
-            ))}
-        </div>
-    );
+    // ... rest of your component code
 };
-
-export default TodoApp;
 ```
 
-### Standalone Example (without React)
+### Example with Partial Updates
 
-This example shows how to initialize and interact with KPathDB outside of a React component, demonstrating direct database operations.
+KPathDB supports partial updates, allowing you to update specific fields without sending the entire object:
 
 ```tsx
-import { KPathDB } from "kpathdb";
-import { z } from "zod";
+const UserProfile: React.FC = () => {
+    const { data: user, refresh } = useQuery<User>("users");
+    const { mutate } = useMutation<User>("users");
 
-// Define a Zod schema for message records
-const MessageSchema = z.object({
-    id: z.number().optional(), // Auto-incremented key; optional when adding
-    text: z.string(),
-    vector: z.array(z.number()),
-    timestamp: z.number(),
-});
-
-// Database configuration with a "messages" store
-const dbConfig = {
-    name: "ChatDB",
-    version: 1,
-    stores: {
-        messages: { keyPath: "id", autoIncrement: true, zodSchema: MessageSchema },
-    },
-};
-
-// Initialize the database
-const db = new KPathDB(dbConfig);
-
-// Retrieve the "messages" store (automatically infers the data type)
-const messageStore = db.getStore<(typeof MessageSchema)["_output"]>("messages");
-
-// Example operations (you can perform these inside async functions)
-async function performOperations() {
-    // Add a new message
-    const newMessage = {
-        text: "Hello, world!",
-        vector: [0.1, 0.2, 0.3], // Example vector
-        timestamp: Date.now(),
+    const updateUserTheme = async (userId: string, theme: "light" | "dark") => {
+        await mutate(
+            "update",
+            {
+                id: userId,
+                preferences: { theme },
+            },
+            { partial: true } // Enable partial updates
+        );
+        refresh();
     };
-    const addedMessageId = await messageStore.add(newMessage);
-    console.log("Added message with ID:", addedMessageId);
-
-    // Retrieve all messages
-    const allMessages = await messageStore.getAll();
-    console.log("All messages:", allMessages);
-
-    // Find messages similar to a given vector
-    const targetVector = [0.15, 0.25, 0.35];
-    const similarMessages = await messageStore.findSimilar(targetVector);
-    console.log("Messages similar to", targetVector, ":", similarMessages);
-
-    // Delete a message by ID
-    await messageStore.delete(addedMessageId);
-    console.log("Message with ID", addedMessageId, "deleted.");
-}
-
-performOperations().catch(console.error);
-```
-
-### Using `useVectorQuery` for Vector Search in React
-
-This section demonstrates the usage of the `useVectorQuery` hook, which is specifically designed for performing vector-based similarity searches within your React components. This hook simplifies the process of finding items in your database that are most similar to a given vector, making it ideal for applications like recommendation systems or content-based filtering.
-
-```tsx
-import React from "react";
-import { useVectorQuery } from "kpathdb";
-import { z } from "zod";
-
-// Define the schema for your data, including a vector field.
-const ItemSchema = z.object({
-    id: z.string(),
-    name: z.string(),
-    vector: z.array(z.number()), // The vector field used for similarity search.
-});
-
-type Item = z.infer<typeof ItemSchema>;
-
-const VectorSearchComponent: React.FC = () => {
-    // Example target vector for the similarity search.
-    const targetVector = [0.5, 0.7, 0.2];
-
-    // Use the useVectorQuery hook to perform the similarity search.
-    // 'items' is the name of your store, and targetVector is the vector you're comparing against.
-    const { data: similarItems, isLoading } = useVectorQuery<Item>("items", targetVector);
-
-    if (isLoading) {
-        return <div>Loading similar items...</div>;
-    }
-
-    return (
-        <div>
-            <h1>Items similar to the target vector:</h1>
-            {similarItems.map((item) => (
-                <div key={item.id}>
-                    <h2>{item.name}</h2>
-                    {/* Display other item details here */}
-                </div>
-            ))}
-        </div>
-    );
 };
-
-export default VectorSearchComponent;
 ```
-
-### Explanation
-
-- schema definition: you should have a vector field.
-- targetVector: This is the vector you want to find similar items to. You might generate this dynamically based on user input or other criteria.
-- useVectorQuery Hook: This hook takes the store name and the target vector as arguments. It returns the similar items found and a loading state.
-- Displaying Results: The component renders a loading message while the search is in progress and then displays the similar items found.
 
 ## API Reference
 
@@ -272,15 +179,268 @@ Methods available on store instances returned by `getStore`. These methods are g
 
 ### React Hooks
 
-- **`useQuery(storeName, queryKey?)`:** Hook for querying data.
-    - `storeName`: The name of the store to query.
-    - `queryKey`: Optional key for caching.
-- **`useMutation(storeName)`:** Hook for performing mutations (add, update, delete).
-    - `storeName`: The name of the store to perform mutations on.
-- **`useVectorQuery(storeName, targetVector, options?)`:** Hook for performing vector similarity searches.
-    - `storeName`: The name of the store.
-    - `targetVector`: The vector to search for similarity.
-    - `options`: Optional parameters, such as `limit`.
+KPathDB provides several React hooks for easy database interaction:
+
+#### `useQuery<T>`
+
+Hook for querying data from a store.
+
+```tsx
+const {
+    data, // The queried data (type T[])
+    error, // Error object if query fails
+    loading, // Boolean indicating loading state
+    refresh, // Function to manually refresh the data
+} = useQuery<T>(storeName);
+```
+
+Parameters:
+
+- `storeName`: Name of the store to query
+- Generic `T`: Type of the data in the store
+
+#### `useMutation<T>`
+
+Hook for performing mutations (add/update/delete operations).
+
+```tsx
+const {
+    mutate, // Function to perform mutations
+    loading, // Boolean indicating operation in progress
+    error, // Error object if mutation fails
+} = useMutation<T>(storeName);
+
+// Usage examples:
+await mutate("add", newItem);
+await mutate("update", updatedItem, { partial: true });
+await mutate("delete", itemId);
+```
+
+Parameters:
+
+- `storeName`: Name of the store to mutate
+- Generic `T`: Type of the data in the store
+
+Mutation Options:
+
+- `partial`: Enable partial updates (only update specified fields)
+
+#### `useStore<T>`
+
+Low-level hook for direct store access.
+
+```tsx
+const store = useStore<T>(storeName);
+// Access store methods directly
+await store.add(data);
+await store.update(data);
+await store.delete(key);
+```
+
+### Database Configuration
+
+#### Basic Configuration
+
+```tsx
+interface DBConfig {
+    name: string; // Database name
+    version: number; // Database version
+    stores: {
+        // Store configurations
+        [key: string]: {
+            keyPath: string; // Primary key field
+            zodSchema?: z.ZodSchema; // Optional Zod schema
+            indexes?: string[]; // Optional indexed fields
+        };
+    };
+}
+```
+
+#### Example with Advanced Configuration
+
+```tsx
+import { z } from "zod";
+import { DBConfig } from "kpathdb";
+
+const userSchema = z.object({
+    id: z.string(),
+    email: z.string().email(),
+    profile: z.object({
+        name: z.string(),
+        age: z.number().min(0),
+        preferences: z.object({
+            theme: z.enum(["light", "dark"]),
+            notifications: z.boolean(),
+        }),
+    }),
+});
+
+export const dbConfig: DBConfig = {
+    name: "MyApp",
+    version: 1,
+    stores: {
+        users: {
+            keyPath: "id",
+            zodSchema: userSchema,
+            indexes: ["email"],
+        },
+        settings: {
+            keyPath: "key",
+        },
+    },
+};
+```
+
+### Error Handling
+
+KPathDB provides structured error handling:
+
+```tsx
+const TodoList: React.FC = () => {
+    const { data, error, loading } = useQuery<Todo>("todos");
+    const { mutate, error: mutationError } = useMutation<Todo>("todos");
+
+    if (loading) return <div>Loading...</div>;
+    if (error) return <div>Error: {error.message}</div>;
+
+    const handleAdd = async (todo: Todo) => {
+        try {
+            const success = await mutate("add", todo);
+            if (!success) {
+                console.error("Failed to add todo:", mutationError);
+            }
+        } catch (e) {
+            console.error("Unexpected error:", e);
+        }
+    };
+};
+```
+
+### TypeScript Integration
+
+KPathDB is built with TypeScript and provides full type safety:
+
+```tsx
+// Define your types
+interface User {
+    id: string;
+    email: string;
+    profile: {
+        name: string;
+        age: number;
+        preferences: {
+            theme: "light" | "dark";
+            notifications: boolean;
+        };
+    };
+}
+
+// Use with hooks
+const { data: users } = useQuery<User>("users");
+const { mutate } = useMutation<User>("users");
+
+// Type-safe mutations
+await mutate(
+    "update",
+    {
+        id: "user-1",
+        profile: {
+            preferences: {
+                theme: "dark", // TypeScript ensures valid theme value
+            },
+        },
+    },
+    { partial: true }
+);
+```
+
+### Performance Considerations
+
+1. **Indexing**
+
+```tsx
+const dbConfig: DBConfig = {
+    stores: {
+        users: {
+            keyPath: "id",
+            indexes: ["email", "username"], // Fields you frequently query
+        },
+    },
+};
+```
+
+2. **Batch Operations**
+
+```tsx
+const batchUpdate = async (items: Item[]) => {
+    for (const item of items) {
+        await mutate("update", item);
+    }
+    refresh(); // Single refresh after all updates
+};
+```
+
+3. **Partial Updates**
+
+```tsx
+// Prefer partial updates for large objects
+await mutate(
+    "update",
+    {
+        id: userId,
+        lastSeen: new Date(),
+    },
+    { partial: true }
+);
+```
+
+### Best Practices
+
+1. **Schema Validation**
+
+    - Always define Zod schemas for critical data stores
+    - Include runtime type checking for user inputs
+
+2. **Error Handling**
+
+    - Implement proper error boundaries
+    - Provide user-friendly error messages
+    - Log errors for debugging
+
+3. **Performance**
+
+    - Use indexes for frequently queried fields
+    - Implement pagination for large datasets
+    - Use partial updates when possible
+
+4. **Data Management**
+    - Implement proper cleanup strategies
+    - Handle version migrations
+    - Regular data validation
+
+### Migration Guide
+
+#### Upgrading Database Version
+
+```tsx
+const dbConfig: DBConfig = {
+    name: "MyApp",
+    version: 2, // Increment version number
+    stores: {
+        users: {
+            // ... updated store configuration
+        },
+    },
+    migrations: {
+        2: async (db) => {
+            // Perform migration logic
+            const store = db.getStore("users");
+            const users = await store.getAll();
+            // Update user data structure
+        },
+    },
+};
+```
 
 ## Architecture Overview
 
@@ -306,6 +466,121 @@ To start the reference implementation and run tests:
 ```bash
 npm run dev:test
 ```
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+#### 1. Avoiding Unnecessary Re-renders with `useQuery`
+
+When using `useQuery`, you might encounter unnecessary re-renders if the query parameters or predicates change frequently. To mitigate this, use `React.useCallback` to memoize functions and `React.useMemo` for derived values.
+
+**Example:**
+
+```tsx
+import React from "react";
+import { useQuery } from "kpathdb";
+
+interface Agent {
+    id: string;
+    name: string;
+    status: string;
+}
+
+const AgentList: React.FC = () => {
+    // Assume paramsPromise is a promise that resolves to the query parameters
+    const params = React.use(paramsPromise);
+
+    // Use useCallback to memoize the predicate function
+    const predicate = React.useCallback((item: Agent) => item.id === params.agent, [params.agent]);
+
+    // Use useQuery with the memoized predicate
+    const { data: agents, loading, error } = useQuery<Agent>("agents", { predicate });
+
+    if (loading) return <div>Loading...</div>;
+    if (error) return <div>Error: {error.message}</div>;
+
+    return (
+        <ul>
+            {agents.map((agent) => (
+                <li key={agent.id}>{agent.name}</li>
+            ))}
+        </ul>
+    );
+};
+```
+
+**Key Points:**
+
+- **Memoization:** Use `React.useCallback` to memoize functions that are passed as dependencies to hooks like `useQuery`.
+- **Performance:** This approach helps in reducing unnecessary re-renders by ensuring that the function reference remains stable unless its dependencies change.
+
+#### 2. Handling Asynchronous Parameters
+
+If your query parameters are derived from asynchronous operations, ensure they are resolved before using them in hooks.
+
+**Example:**
+
+```tsx
+const fetchParams = async () => {
+    // Simulate fetching parameters
+    return { agent: "agent-123" };
+};
+
+const paramsPromise = fetchParams();
+
+const params = React.use(paramsPromise);
+```
+
+**Key Points:**
+
+- **Async Handling:** Use promises or async/await to handle asynchronous operations before using their results in hooks.
+
+#### 3. Debugging Data Fetching Errors
+
+If you encounter errors while fetching data, ensure that:
+
+- The store name is correct and matches the configuration.
+- The predicate function is correctly defined and does not throw errors.
+- The database is properly initialized with `DBProvider`.
+
+**Example:**
+
+```tsx
+const { data, error } = useQuery<Agent>("agents");
+
+if (error) {
+    console.error("Data fetching error:", error);
+    return <div>Error: {error.message}</div>;
+}
+```
+
+**Key Points:**
+
+- **Error Logging:** Log errors to the console for easier debugging.
+- **Validation:** Ensure that your database configuration and queries are correctly set up.
+
+#### 4. Ensuring Proper Cleanup
+
+When using hooks that involve side effects, ensure proper cleanup to avoid memory leaks.
+
+**Example:**
+
+```tsx
+React.useEffect(() => {
+    const subscription = someObservable.subscribe();
+
+    return () => {
+        subscription.unsubscribe();
+    };
+}, []);
+```
+
+**Key Points:**
+
+- **Cleanup:** Always return a cleanup function from `useEffect` when subscribing to observables or adding event listeners.
+
+By following these troubleshooting tips, you can optimize your use of KPathDB and React hooks, ensuring efficient and error-free data management in your applications.
 
 ## Roadmap
 

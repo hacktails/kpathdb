@@ -143,7 +143,7 @@ export const useQuery = <T,>(storeName: string, queryParams?: { predicate?: (ite
 /**
  * Mutation hook with error handling
  */
-export const useMutation = <T,>(storeName: string) => {
+export const useMutation = <T extends { id: IDBValidKey }>(storeName: string) => {
     const store = useStore<T>(storeName);
     const [mutationState, setMutationState] = React.useState<{
         loading: boolean;
@@ -151,19 +151,24 @@ export const useMutation = <T,>(storeName: string) => {
     }>({ loading: false });
 
     const mutate = React.useCallback(
-        async (operation: DatabaseOperation, item: T | IDBValidKey) => {
+        async (operation: DatabaseOperation, data: T | Partial<T> | IDBValidKey, options?: { partial?: boolean }) => {
             try {
                 setMutationState({ loading: true, error: undefined });
 
                 switch (operation) {
                     case "add":
-                        await store.add(item as T);
+                        await store.add(data as T);
                         break;
                     case "update":
-                        await store.update(item as T);
+                        if (options?.partial && typeof data === "object" && data !== null && "id" in data) {
+                            const existing = await store.get(data.id as IDBValidKey);
+                            await store.update({ ...existing, ...data } as T);
+                        } else {
+                            await store.update(data as T);
+                        }
                         break;
                     case "delete":
-                        await store.delete(item as IDBValidKey);
+                        await store.delete(data as IDBValidKey);
                         break;
                     default:
                         throw new Error("Invalid database operation");
