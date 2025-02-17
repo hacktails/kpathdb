@@ -8,7 +8,7 @@ const todoSchema = z.object({
 });
 
 export const dbConfig: DBConfig = {
-    name: "TodoTestDB",
+    name: "TestDB",
     version: 1,
     stores: {
         todos: {
@@ -16,5 +16,6 @@ export const dbConfig: DBConfig = {
             zodSchema: todoSchema,
             indexes: ["completed"],
         },
+        users: { keyPath: "id" },
     },
 };
